@@ -5,16 +5,17 @@ function zeroPad(num, size) {
 }
 
 function createMarkerElement(id, size, brightness){
-	let baseUrl = 'https://raw.githubusercontent.com/AprilRobotics/apriltag-imgs/master/tag36h11/';
+	let baseUrl = "https://raw.githubusercontent.com/AprilRobotics/apriltag-imgs/master/tag36h11/";
 
-	let image = document.createElement('img');
-	image.src = baseUrl + 'tag36_11_' + zeroPad(id, 5) + '.png'
-	image.style.width = size + 'px';
-	image.style.height = size + 'px';
+	let image = document.createElement("img");
+	image.id = "pupil-apriltag-marker-" + id;
+	image.src = baseUrl + "tag36_11_" + zeroPad(id, 5) + ".png"
+	image.style.width = size + "px";
+	image.style.height = size + "px";
 	image.style.zIndex = 999;
-	image.style.imageRendering = 'pixelated';
+	image.style.imageRendering = "pixelated";
 	image.style.filter = "brightness(" + (brightness*100) + "%)";
-	image.style.position = 'fixed';
+	image.style.position = "fixed";
 
 	return image;
 }
@@ -31,19 +32,19 @@ function embedTags(markerSize, brightness, target=null){
 		createMarkerElement(3, markerSize, brightness),
 	];
 
-	markers[0].style.top = '0px';
-	markers[0].style.left = '0px';
+	markers[0].style.top = "0px";
+	markers[0].style.left = "0px";
 
-	markers[1].style.top = '0px';
-	markers[1].style.right = '0px';
+	markers[1].style.top = "0px";
+	markers[1].style.right = "0px";
 
-	markers[2].style.bottom = '0px';
-	markers[2].style.left = '0px';
+	markers[2].style.bottom = "0px";
+	markers[2].style.left = "0px";
 
-	markers[3].style.bottom = '0px';
-	markers[3].style.right = '0px';
+	markers[3].style.bottom = "0px";
+	markers[3].style.right = "0px";
 
-	let tagContainer = document.createElement('div');
+	let tagContainer = document.createElement("div");
 	tagContainer.id = "apriltag-marker-root-container";
 	for(let marker of markers){
 		marker.className = "apriltag-marker"
@@ -54,11 +55,11 @@ function embedTags(markerSize, brightness, target=null){
 }
 
 function hideTags(){
-	document.getElementById("apriltag-marker-root-container").style.visibility = 'hidden';
+	document.getElementById("apriltag-marker-root-container").style.visibility = "hidden";
 }
 
 function showTags(){
-	document.getElementById("apriltag-marker-root-container").style.visibility = 'visible';
+	document.getElementById("apriltag-marker-root-container").style.visibility = "visible";
 }
 
 function shimLocationEventsForSPAs(){
@@ -66,21 +67,21 @@ function shimLocationEventsForSPAs(){
 	let oldPushState = history.pushState;
 	history.pushState = function pushState() {
 		let ret = oldPushState.apply(this, arguments);
-		window.dispatchEvent(new Event('pushstate'));
-		window.dispatchEvent(new Event('locationchange'));
+		window.dispatchEvent(new Event("pushstate"));
+		window.dispatchEvent(new Event("locationchange"));
 		return ret;
 	};
 
 	let oldReplaceState = history.replaceState;
 	history.replaceState = function replaceState() {
 		let ret = oldReplaceState.apply(this, arguments);
-		window.dispatchEvent(new Event('replacestate'));
-		window.dispatchEvent(new Event('locationchange'));
+		window.dispatchEvent(new Event("replacestate"));
+		window.dispatchEvent(new Event("locationchange"));
 		return ret;
 	};
 
-	window.addEventListener('popstate', () => {
-		window.dispatchEvent(new Event('locationchange'));
+	window.addEventListener("popstate", () => {
+		window.dispatchEvent(new Event("locationchange"));
 	});
 }
 
@@ -93,25 +94,40 @@ function installEventListeners(){
 
 	window.addEventListener("resize", (e) => {
 		propagateResizeEvent(window.innerWidth, window.innerHeight);
-		propagateAOIs();
+		propagatePageElements();
 	});
 
 	window.addEventListener("focus", (e) => {
+		console.log("Focus event")
 		propagateFocusEvent(window.scrollX, window.scrollY);
 	});
 
+	document.addEventListener("visibilitychange", (event) => {
+		console.log("visibility event")
+		if (document.visibilityState == "visible") {
+			console.log("tab is active")
+			propagateFocusEvent(window.scrollX, window.scrollY);
+		} else {
+			console.log("tab is inactive")
+		}
+
+	}, false);
+	console.log("attached visibility change event handler");
+
 	let last_sent_url = window.location.toString();
-	window.addEventListener('locationchange', (e) => {
+	window.addEventListener("locationchange", (e) => {
 		let url = window.location.toString();
 		if(url != last_sent_url){
 			propagateLocationChangeEvent();
-			propagateAOIs();
+			propagatePageElements();
 			last_sent_url = url;
 		}
 	});
 
 	propagateLocationChangeEvent();
 	propagateResizeEvent(window.innerWidth, window.innerHeight);
-	propagateAOIs();
-}
+	propagatePageElements();
 
+	let focusedElement = document.activeElement || document.firstElementChild();
+	focusedElement.focus();
+}

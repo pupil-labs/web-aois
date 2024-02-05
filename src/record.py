@@ -36,7 +36,7 @@ class BrowserRelay:
 
 
     async def playwright_init(self):
-        self.browser = await self.pw.chromium.launch(headless=False, args=['--start-maximized'])
+        self.browser = await self.pw.chromium.launch(headless=False)#, args=['--start-maximized'])
         self.context = await self.browser.new_context(
             no_viewport=True,
             record_video_dir=f"data/{self.recording_id}/"
@@ -46,10 +46,10 @@ class BrowserRelay:
         await self.context.expose_binding('propagateScrollEvent', self.on_scroll)
         await self.context.expose_binding('propagateResizeEvent', self.on_resized)
         await self.context.expose_binding('propagateFocusEvent', self.on_tab_switched)
+        await self.context.expose_binding('propagatePageVisible', self.on_tab_switched)
         await self.context.expose_binding('propagateLocationChangeEvent', self.on_tab_location_changed)
-        await self.context.expose_binding('propagateAOIs', self.on_aois_changed)
+        await self.context.expose_binding('propagatePageElements', self.on_elements_changed)
 
-        await self.send_event(f"marker_size_padded={self.marker_size}")
         self.context.on("page", self.on_new_page)
 
     async def on_scroll(self, source, x, y):
@@ -61,6 +61,8 @@ class BrowserRelay:
             return
 
         self.last_size = (width, height)
+
+        # @todo - this scheme assumes all tabs are in the same window
         await self.send_event(
             f"browser_size={width},{height}",
              event_timestamp_unix_ns=time.time_ns()
@@ -77,6 +79,7 @@ class BrowserRelay:
         if page.url in ['about:blank', 'chrome://newtab/']:
             return
 
+        await asyncio.sleep(1.0)
         await page.evaluate(f'embedTags({self.marker_size}, {self.marker_brightness})')
         await page.evaluate('installEventListeners()')
 
@@ -92,8 +95,8 @@ class BrowserRelay:
     async def on_tab_location_changed(self, source):
         await self.on_new_url(source['page'])
 
-    async def on_aois_changed(self, source):
-        await self.send_aois(source['page'])
+    async def on_elements_changed(self, source):
+        await self.send_elements(source['page'])
 
     async def send_scroll(self, page, x, y, t_ns):
         tab_info = self.tab_info[page]
@@ -120,10 +123,9 @@ class BrowserRelay:
 
         await page.evaluate("showTags()")
 
-    async def send_aois(self, page):
-
+    async def send_elements(self, page):
         tab_info = self.tab_info[page]
-        tab_load_id = f"[{tab_info['id']},{tab_info['load_count']}]"
+        tab_load_id = f"{tab_info['id']},{tab_info['load_count']}"
 
         aoi_locators = self.get_aoi_locators_for_page(page)
         for aoi_name,locator in aoi_locators.items():
@@ -131,7 +133,25 @@ class BrowserRelay:
             bounds = [bounds['x'], bounds['y'], bounds['width'], bounds['height']]
             bounds_str = ','.join([str(v) for v in bounds])
 
-            await self.send_event(f"aoi{tab_load_id}[{aoi_name}]={bounds_str}")
+            await self.send_event(f"aoi[{tab_load_id},{aoi_name}]={bounds_str}")
+
+        # @TODO: make marker ids configurable
+        for marker_id in range(4):
+            locator = page.locator(f"#pupil-apriltag-marker-{marker_id}")
+            bounds = await locator.bounding_box()
+
+            margin = bounds['width'] / 10, bounds['height'] / 10
+            real_bounds = [
+                bounds['x'] + margin[0],
+                bounds['y'] + margin[1],
+                bounds['width'] - margin[0]*2,
+                bounds['height'] - margin[1]*2
+            ]
+
+            bounds_str = ','.join([str(v) for v in real_bounds])
+
+            await self.send_event(f"marker[{tab_load_id},{marker_id}]={bounds_str}")
+
 
     async def send_event(self, event, event_timestamp_unix_ns=None):
         if self.taking_screen_shots:
@@ -142,6 +162,7 @@ class BrowserRelay:
 
     async def record_page(self, url):
         self.recording_id = await self.device.recording_start()
+        #self.recording_id = "FAKE"
 
         if self.browser is None:
             await self.playwright_init()
@@ -167,7 +188,6 @@ class BrowserRelay:
         await page.evaluate('window.scrollTo(0, 0)')
         self.taking_screen_shots = False
 
-
     def get_aoi_locators_for_page(self, page):
         locators = {}
         for url,aois in self.aois.items():
@@ -181,10 +201,6 @@ class BrowserRelay:
                     locators[aoi_name] = locater_method(**aoi['args'])
 
         return locators
-
-
-
-
 
 async def main():
 
