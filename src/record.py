@@ -36,7 +36,7 @@ class BrowserRelay:
 
 
     async def playwright_init(self):
-        self.browser = await self.pw.chromium.launch(headless=False)#, args=['--start-maximized'])
+        self.browser = await self.pw.chromium.launch(headless=False, args=['--start-maximized'])
         self.context = await self.browser.new_context(
             no_viewport=True,
             record_video_dir=f"data/{self.recording_id}/"
