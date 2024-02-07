@@ -100,7 +100,7 @@ class BrowserTabSurface:
 
         window_gaze = [
             surface_gaze.x * browser_size[0] + self.scroll_position[0],
-            surface_gaze.y * browser_size[0] + self.scroll_position[0],
+            browser_size[1] - surface_gaze.y * browser_size[1] + self.scroll_position[0],
         ]
         page_gaze = [window_gaze[i] + self.scroll_position[i] for i in range(2)]
 
@@ -109,9 +109,9 @@ class BrowserTabSurface:
             "norm x": surface_gaze.x,
             "norm y": surface_gaze.y,
             "window x [px]": window_gaze[0],
-            "window y [px]": window_gaze[0],
+            "window y [px]": window_gaze[1],
             "page x [px]": page_gaze[0],
-            "page y [px]": page_gaze[0],
+            "page y [px]": page_gaze[1],
         })
 
         for aoi_name, aoi_bounds in self.aoi_definitions.items():
@@ -146,6 +146,9 @@ class ExpirationGenerator:
             return
 
         if self.buffer is not None:
+            if timestamp is not None and self.buffer[0] > timestamp:
+                return
+
             yield self.buffer
 
         try:
@@ -160,8 +163,12 @@ class ExpirationGenerator:
 
 class TimedDataCollection:
     def __init__(self, timestamps, data):
-        self.timestamps = timestamps
-        self.data = data
+        paired = zip(timestamps, data)
+
+        if not np.all(timestamps[:-1] <= timestamps[1:]):
+            paired = list(sorted(paired, key=lambda p: p[0]))
+
+        self.timestamps, self.data = list(zip(*paired))
 
     def __iter__(self):
         return MatchedIterator(self.timestamps, self.data)
@@ -170,7 +177,7 @@ class TimedDataCollection:
 class RecordingProcessor:
     def __init__(self, recording_path):
         self.recording_path = Path(recording_path)
-        self.output_path = self.recording_path / 'webpage-aois'
+        self.output_path = self.recording_path.parent / 'data' / 'webpage-aois'
         self.output_path.mkdir(parents=True, exist_ok=True)
 
         self.event_regex = re.compile(r'(?P<event>[^\[=]*)(\[(?P<args>[^\]]*)\])?(=(?P<value>.*))?')
@@ -181,7 +188,7 @@ class RecordingProcessor:
 
         self.tab_states = []
         self.active_tab = None
-
+        self.last_frame = None
 
     def process(self):
         video_file = self.recording_path / "Neon Scene Camera v1 ps1.mp4"
@@ -209,17 +216,19 @@ class RecordingProcessor:
             self.iterate_until(frame_timestamp)
             self.process_frame(frame_timestamp, frame)
 
-        print("\nRemaining:")
         self.iterate_until(None)
 
     def iterate_until(self, timestamp):
         for gaze_timestamp, gaze in self.gaze_generator.until(timestamp):
+            for event_timestamp, event in self.event_generator.until(gaze_timestamp):
+                self.process_event(event_timestamp, event)
+
             self.process_gaze(gaze_timestamp, gaze)
 
-        for event_timestamp, event in self.event_generator.until(timestamp):
-            self.process_event(event_timestamp, event)
-
     def process_frame(self, timestamp, frame):
+        if self.active_tab is None:
+            return
+
         if self.active_tab.markers_dirty:
             if self.active_tab.surface is None:
                 self.active_tab.surface = self.gaze_mapper.add_surface(
@@ -237,8 +246,10 @@ class RecordingProcessor:
 
         self.last_frame = frame.asnumpy()
 
-
     def process_gaze(self, timestamp, gaze):
+        if self.last_frame is None:
+            return
+
         result = self.gaze_mapper.process_frame(self.last_frame, gaze)
         for surface_uid, surface_gazes in result.mapped_gaze.items():
             if surface_uid == self.active_tab.surface.uid:
@@ -248,7 +259,6 @@ class RecordingProcessor:
                         surface_gaze,
                         self.browser_client_size
                     )
-
 
     def process_event(self, timestamp, event):
         event_match = self.event_regex.match(event)
