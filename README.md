@@ -11,27 +11,29 @@ pip install git+https://github.com/pupil-labs/pupil-web-aois.git
 2. Collect data
 
     a. Record a browsing session. This will connect to the companion app and start a recording. The recording will be stopped when the browser window is closed.
+
+    You can optionally specify a URL to start with. If you do not, the first URL in the AOI definitions file will be used.
     ```bash
-    pupil-web-aois-record path-to-aoi-defs.json
+    pupil-web-aois-record path-to-aoi-defs.json [https://example.com/]
     ```
 
     b. Download and extract the recording to your PC. Recordings can be [transfered from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud.
 
 3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
     ```bash
-    pupil-web-aois-process path-to-recording
+    pupil-web-aois-process path-to-recording output-path
     ```
 
 4. Visualize your data
 
     a. Collect screenshots
     ```bash
-    pupil-web-aois-screenshot path-to-aoi-defs.json path-to-save-folder
+    pupil-web-aois-screenshot path-to-aoi-defs.json output-path
     ```
 
     b. Create visualizations
     ```bash
-    pupil-web-aois-visualize path-to-recording path-to-screenshots-folder
+    pupil-web-aois-visualize process-output-path screenshots-output-path
     ```
 
 

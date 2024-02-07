@@ -1,3 +1,5 @@
+import sys
+import json
 import asyncio
 import time
 from pathlib import Path
@@ -5,21 +7,13 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 from pupil_labs.realtime_api import Device, Network
 
-aoi_type_func_map = {
-    'alt_text': 'get_by_alt_text',
-    'label': 'get_by_label',
-    'placeholder': 'get_by_placeholder',
-    'role': 'get_by_role',
-    'test_id': 'get_by_test_id',
-    'text': 'get_by_text',
-    'title': 'get_by_title',
-}
+from aoi_locator_helper import get_aoi_locators_for_page
 
 class BrowserRelay:
-    def __init__(self, pw, device, aois):
+    def __init__(self, pw, device, aoi_definitions_by_url):
         self.pw = pw
         self.device = device
-        self.aois = aois
+        self.aoi_definitions_by_url = aoi_definitions_by_url
 
         self.browser = None
         self.context = None
@@ -31,9 +25,6 @@ class BrowserRelay:
         self.marker_brightness = 0.5
 
         self.recording_id = ''
-        self.screenshot_aois_every_load = False
-        self.taking_screen_shots = False
-
 
     async def playwright_init(self):
         self.browser = await self.pw.chromium.launch(headless=False, args=['--start-maximized'])
@@ -113,27 +104,18 @@ class BrowserRelay:
             event_timestamp_unix_ns=time.time_ns()
         )
 
-        await page.evaluate("hideTags()")
-        tab_load_id = f"{tab_info['id']}-{tab_info['load_count']}"
-        screenshot_path = Path(f"data/{self.recording_id}/screenshots/{tab_load_id}/")
-        await page.screenshot(path=screenshot_path/"full.png", full_page=True)
-
-        if self.screenshot_aois_every_load:
-            await self.screenshot_aois(page, screenshot_path/'aois')
-
-        await page.evaluate("showTags()")
-
     async def send_elements(self, page):
         tab_info = self.tab_info[page]
         tab_load_id = f"{tab_info['id']},{tab_info['load_count']}"
 
-        aoi_locators = self.get_aoi_locators_for_page(page)
-        for aoi_name,locator in aoi_locators.items():
-            bounds = await locator.bounding_box()
-            bounds = [bounds['x'], bounds['y'], bounds['width'], bounds['height']]
-            bounds_str = ','.join([str(v) for v in bounds])
+        if page.url in self.aoi_definitions_by_url:
+            aoi_locators = get_aoi_locators_for_page(page, self.aoi_definitions_by_url[page.url])
+            for aoi_name,locator in aoi_locators.items():
+                bounds = await locator.bounding_box()
+                bounds = [bounds['x'], bounds['y'], bounds['width'], bounds['height']]
+                bounds_str = ','.join([str(v) for v in bounds])
 
-            await self.send_event(f"aoi[{tab_load_id},{aoi_name}]={bounds_str}")
+                await self.send_event(f"aoi[{tab_load_id},{aoi_name}]={bounds_str}")
 
         # @TODO: make marker ids configurable
         for marker_id in range(4):
@@ -154,15 +136,11 @@ class BrowserRelay:
 
 
     async def send_event(self, event, event_timestamp_unix_ns=None):
-        if self.taking_screen_shots:
-            return
-
         print('SEND', event)
         await self.device.send_event(event, event_timestamp_unix_ns=time.time_ns())
 
     async def record_page(self, url):
         self.recording_id = await self.device.recording_start()
-        #self.recording_id = "FAKE"
 
         if self.browser is None:
             await self.playwright_init()
@@ -178,32 +156,7 @@ class BrowserRelay:
         await self.device.recording_stop_and_save()
         await self.context.close()
 
-    async def screenshot_aois(self, page, path=None):
-        self.taking_screen_shots = True
-
-        aoi_locators = self.get_aoi_locators_for_page(page)
-        for aoi_name,locator in aoi_locators.items():
-            await locator.screenshot(path=path/f"{aoi_name}.png")
-
-        await page.evaluate('window.scrollTo(0, 0)')
-        self.taking_screen_shots = False
-
-    def get_aoi_locators_for_page(self, page):
-        locators = {}
-        for url,aois in self.aois.items():
-            if page.url == url:
-                for aoi_name,aoi in aois.items():
-                    if aoi['type'] not in aoi_type_func_map:
-                        print('Unrecognized aoi type', aoi['type'])
-                        continue
-
-                    locater_method = getattr(page, aoi_type_func_map[aoi['type']])
-                    locators[aoi_name] = locater_method(**aoi['args'])
-
-        return locators
-
 async def main():
-
     async with Network() as network:
         dev_info = await network.wait_for_new_device(timeout_seconds=5)
 
@@ -211,20 +164,16 @@ async def main():
         print('Starting recording!')
 
         async with async_playwright() as playwright:
-            relay = BrowserRelay(playwright, device, aois={
-                "https://docs.pupil-labs.com/neon/data-collection/data-streams/": {
-                    "gaze": {'type':"role",'args':{'role': "img", 'name':"Gaze"}},
-                    "fixations": {'type':"role",'args':{'role': "img", 'name':"Fixations"}},
-                    "eye_states": {'type':"role",'args':{'role': "img", 'name':"Coordinate systems of 3D eye"}},
-                    "imu_coordinates": {'type':"role",'args':{'role': "img", 'name':"IMU Coordinate System"}},
-                    "imu_camera": {'type':"role",'args':{'role': "img", 'name':"IMU Scene Camera"}},
-                    "imu_orientation": {'type':"role",'args':{'role': "img", 'name':"IMU Pitch, Yaw, Roll"}},
-                },
-            })
+            with open(sys.argv[1], "rt") as aoi_definitions_file:
+                aoi_definitions = json.load(aoi_definitions_file)
 
-            await relay.record_page(
-                url="https://docs.pupil-labs.com/neon/data-collection/data-streams/",
-            )
+            relay = BrowserRelay(playwright, device, aoi_definitions_by_url=aoi_definitions)
 
+            if len(sys.argv) > 2:
+                url = sys.argv[2]
+            else:
+                url = next(iter(aoi_definitions))
+
+            await relay.record_page(url=url)
 
 asyncio.run(main())

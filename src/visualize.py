@@ -10,29 +10,31 @@ from image_tools import add_overlay
 
 
 class HeatmapVisualizer:
-    def __init__(self, recording_path):
-        self.recording_path = Path(recording_path)
+    def __init__(self, data_path, screenshot_path):
+        self.data_path = Path(data_path)
+        self.screenshot_path = Path(screenshot_path)
 
     def save_full_heatmap(self, scale=0.25, detail=0.005):
-        self._process_image(
-            self.recording_path.parent / 'data' / 'webpage-aois' / 'tab-0' / 'gazes.csv',
-            self.recording_path.parent / 'screenshots' / '0-0' / 'full.png',
-            scale, detail
-        )
+        for gaze_data_file in self.data_path.glob('tab-*/gazes.csv'):
+            self._save_heatmap(
+                gaze_data_file,
+                self.screenshot_path / 'full-page.png',
+                scale, detail
+            )
 
     def save_aoi_heatmaps(self, scale=0.25, detail=0.025):
-        for aoi_screenshot in (self.recording_path.parent / 'screenshots').glob('*/aois/*.png'):
-            self.save_aoi_heatmap(aoi_screenshot.stem, scale, detail)
+        for gaze_data_file in self.data_path.glob('tab-*/aoi-*.csv'):
+            self.save_aoi_heatmap(gaze_data_file, scale, detail)
 
-    def save_aoi_heatmap(self, aoi_name, scale=0.25, detail=0.025):
-        self._process_image(
-            self.recording_path.parent / 'data' / 'webpage-aois' / 'tab-0' / f'aoi-{aoi_name}.csv',
-            self.recording_path.parent / 'screenshots' / '0-0' / 'aois' / f'{aoi_name}.png',
+    def save_aoi_heatmap(self, gaze_data_file, scale=0.25, detail=0.025):
+        aoi_name = gaze_data_file.stem.split('-')[-1]
+        self._save_heatmap(
+            gaze_data_file,
+            self.screenshot_path / f'aoi-{aoi_name}.png',
             scale, detail
         )
 
-    def _process_image(self, gaze_data_path, screenshot_path, scale=0.25, detail=0.01):
-
+    def _save_heatmap(self, gaze_data_path, screenshot_path, scale=0.25, detail=0.01):
         screenshot = cv2.imread(str(screenshot_path))
         heatmap = np.zeros(screenshot.shape[:2])
 
@@ -87,6 +89,6 @@ class HeatmapVisualizer:
 
 if __name__ == '__main__':
     import sys
-    visualizer = HeatmapVisualizer(sys.argv[1])
+    visualizer = HeatmapVisualizer(sys.argv[1], sys.argv[2])
     visualizer.save_full_heatmap(scale=1.0)
     visualizer.save_aoi_heatmaps(scale=1.0)

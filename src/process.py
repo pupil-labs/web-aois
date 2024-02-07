@@ -31,8 +31,8 @@ def load_calibration(path):
     )
 
 
-class BrowserTabSurface:
-    def __init__(self, id, output_folder):
+class BrowserTabState:
+    def __init__(self, id, output_path):
         self.id = id
         self.history = []
         self.marker_verts = {}
@@ -41,10 +41,10 @@ class BrowserTabSurface:
         self.scroll_position = (0, 0)
         self.aoi_definitions = {}
 
-        self.output_folder = output_folder
-        self.output_folder.mkdir(parents=True, exist_ok=True)
+        self.output_path = output_path
+        self.output_path.mkdir(parents=True, exist_ok=True)
         self.gaze_writer = csv.DictWriter(
-            (output_folder/"gazes.csv").open('wt'),
+            (output_path/"gazes.csv").open('wt'),
             [
                 'timestamp',
                 'norm x',
@@ -79,7 +79,7 @@ class BrowserTabSurface:
         }
         if name not in self.aoi_writers:
             self.aoi_writers[name] = csv.DictWriter(
-                (self.output_folder/f"aoi-{name}.csv").open('wt'),
+                (self.output_path/f"aoi-{name}.csv").open('wt'),
                 [
                     'timestamp',
                     'x norm',
@@ -175,10 +175,9 @@ class TimedDataCollection:
 
 
 class RecordingProcessor:
-    def __init__(self, recording_path):
+    def __init__(self, recording_path, output_path):
         self.recording_path = Path(recording_path)
-        self.output_path = self.recording_path.parent / 'data' / 'webpage-aois'
-        self.output_path.mkdir(parents=True, exist_ok=True)
+        self.output_path = Path(output_path)
 
         self.event_regex = re.compile(r'(?P<event>[^\[=]*)(\[(?P<args>[^\]]*)\])?(=(?P<value>.*))?')
 
@@ -250,6 +249,10 @@ class RecordingProcessor:
         if self.last_frame is None:
             return
 
+        # @TODO: each call to process_frame has to find surface tags again
+        #        this is only necessary when the frame has changed
+        #        if the frame hasn't changed, gaze can be mapped to the previously
+        #        calculated surface position
         result = self.gaze_mapper.process_frame(self.last_frame, gaze)
         for surface_uid, surface_gazes in result.mapped_gaze.items():
             if surface_uid == self.active_tab.surface.uid:
@@ -302,7 +305,7 @@ class RecordingProcessor:
     def get_tab_state(self, tab_id):
         tab_id = int(tab_id)
         while tab_id >= len(self.tab_states):
-            self.tab_states.append(BrowserTabSurface(tab_id, self.output_path / f"tab-{tab_id}"))
+            self.tab_states.append(BrowserTabState(tab_id, self.output_path / f"tab-{tab_id}"))
 
         tab = self.tab_states[tab_id]
         if self.active_tab is None:
@@ -313,5 +316,5 @@ class RecordingProcessor:
 
 if __name__ == '__main__':
     import sys
-    processor = RecordingProcessor(sys.argv[1])
+    processor = RecordingProcessor(sys.argv[1], sys.argv[2])
     processor.process()
