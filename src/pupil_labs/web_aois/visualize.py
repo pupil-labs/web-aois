@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from scipy.ndimage import gaussian_filter
 
-from image_tools import add_overlay
+from .image_tools import add_overlay
 
 
 class HeatmapVisualizer:
@@ -87,8 +87,11 @@ class HeatmapVisualizer:
         cv2.imwrite(destination, overlaid)
         print('Saved', destination)
 
-if __name__ == '__main__':
+def main():
     import sys
     visualizer = HeatmapVisualizer(sys.argv[1], sys.argv[2])
     visualizer.save_full_heatmap(scale=1.0)
     visualizer.save_aoi_heatmaps(scale=1.0)
+
+if __name__ == '__main__':
+    main()

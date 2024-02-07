@@ -5,9 +5,9 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
-from aoi_locator_helper import get_aoi_locators_for_page
+from .aoi_locator_helper import get_aoi_locators_for_page
 
-async def main():
+async def async_main():
     async with async_playwright() as playwright:
         with open(sys.argv[1], "rt") as aoi_definitions_file:
             aoi_definitions = json.load(aoi_definitions_file)
@@ -26,4 +26,8 @@ async def main():
             for aoi_name,locator in aoi_locators.items():
                 await locator.screenshot(path=output_path / f"aoi-{aoi_name}.png")
 
-asyncio.run(main())
+def main():
+    asyncio.run(async_main())
+
+if __name__ == '__main__':
+    main()

@@ -313,8 +313,10 @@ class RecordingProcessor:
 
         return tab
 
-
-if __name__ == '__main__':
+def main():
     import sys
     processor = RecordingProcessor(sys.argv[1], sys.argv[2])
     processor.process()
+
+if __name__ == '__main__':
+    main()

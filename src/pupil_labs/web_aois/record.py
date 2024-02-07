@@ -2,12 +2,12 @@ import sys
 import json
 import asyncio
 import time
-from pathlib import Path
+from importlib.resources import files
 
 from playwright.async_api import async_playwright
 from pupil_labs.realtime_api import Device, Network
 
-from aoi_locator_helper import get_aoi_locators_for_page
+from .aoi_locator_helper import get_aoi_locators_for_page
 
 class BrowserRelay:
     def __init__(self, pw, device, aoi_definitions_by_url):
@@ -33,7 +33,7 @@ class BrowserRelay:
             record_video_dir=f"data/{self.recording_id}/"
         )
 
-        await self.context.add_init_script(path="src/aoi-client.js")
+        await self.context.add_init_script(path=files('pupil_labs.web_aois').joinpath('aoi-client.js'))
         await self.context.expose_binding('propagateScrollEvent', self.on_scroll)
         await self.context.expose_binding('propagateResizeEvent', self.on_resized)
         await self.context.expose_binding('propagateFocusEvent', self.on_tab_switched)
@@ -136,7 +136,6 @@ class BrowserRelay:
 
 
     async def send_event(self, event, event_timestamp_unix_ns=None):
-        print('SEND', event)
         await self.device.send_event(event, event_timestamp_unix_ns=time.time_ns())
 
     async def record_page(self, url):
@@ -156,7 +155,7 @@ class BrowserRelay:
         await self.device.recording_stop_and_save()
         await self.context.close()
 
-async def main():
+async def async_main():
     async with Network() as network:
         dev_info = await network.wait_for_new_device(timeout_seconds=5)
 
@@ -176,4 +175,8 @@ async def main():
 
             await relay.record_page(url=url)
 
-asyncio.run(main())
+def main():
+    asyncio.run(async_main())
+
+if __name__ == '__main__':
+    main()

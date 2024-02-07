@@ -2,9 +2,12 @@
 This project can be used with a [Pupil Labs Neon eyetracker](https://pupil-labs.com/products/neon) to record and visualize data as a user browses a webpage. Gaze data is mapped to coordinates for the webpage and for individual AOIs within a page.
 
 ## Installation
+Install the python package and initialize Playwright
 ```
 pip install git+https://github.com/pupil-labs/pupil-web-aois.git
+playwright install
 ```
+
 ## Usage
 1. Create an [AOI Definitions](#aoi-defintions) file
 
@@ -14,26 +17,26 @@ pip install git+https://github.com/pupil-labs/pupil-web-aois.git
 
     You can optionally specify a URL to start with. If you do not, the first URL in the AOI definitions file will be used.
     ```bash
-    pupil-web-aois-record path-to-aoi-defs.json [https://example.com/]
+    pl-web-aois-record path-to-aoi-defs.json [https://example.com/]
     ```
 
     b. Download and extract the recording to your PC. Recordings can be [transfered from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud.
 
 3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
     ```bash
-    pupil-web-aois-process path-to-recording output-path
+    pl-web-aois-process path-to-recording output-path
     ```
 
 4. Visualize your data
 
     a. Collect screenshots
     ```bash
-    pupil-web-aois-screenshot path-to-aoi-defs.json output-path
+    pl-web-aois-screenshots path-to-aoi-defs.json output-path
     ```
 
     b. Create visualizations
     ```bash
-    pupil-web-aois-visualize process-output-path screenshots-output-path
+    pl-web-aois-visualize process-output-path screenshots-output-path
     ```
 
 

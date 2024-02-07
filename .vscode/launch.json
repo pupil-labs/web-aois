@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Record",
+            "type": "python",
+            "request": "launch",
+            "program": "src/record.py",
+            "console": "integratedTerminal",
+            "args": ["data/aois.json"],
+            "justMyCode": true
+        },{
+            "name": "Process",
+            "type": "python",
+            "request": "launch",
+            "program": "src/process.py",
+            "console": "integratedTerminal",
+            "args": ["data/test2/recording", "data/test2/output"],
+            "justMyCode": true
+        },{
+            "name": "Screenshots",
+            "type": "python",
+            "request": "launch",
+            "program": "src/screenshots.py",
+            "console": "integratedTerminal",
+            "args": ["data/aois.json", "data/test2/screenshots"],
+            "justMyCode": true
+        },{
+            "name": "Visualize",
+            "type": "python",
+            "request": "launch",
+            "program": "src/visualize.py",
+            "console": "integratedTerminal",
+            "args": ["data/test2/output", "data/test2/screenshots"],
+            "justMyCode": true
+        }
+    ]
+}
