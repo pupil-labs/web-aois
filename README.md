@@ -76,7 +76,7 @@ Under the hood, AOIs on a webpage are identified using [Playwright's locators](h
 * Click the `Pick Locator` tool on the toolbar at the top of the browser window
 * Hover the mouse over the element you wish to use as an AOI
 * Note the tooltip that appears below the AOI. It will be something like `get_by_text("The Neon Companion app can")` or `get_by_role("img", name="Fixations")`
-* The word after `get_by_` is the role, and the values inside the parentheses are the arguments.
+* The word after `get_by_` is the type, and the values inside the parentheses are the arguments.
 
 Here's an example that defines two AOIs for one webpage:
 ```json
