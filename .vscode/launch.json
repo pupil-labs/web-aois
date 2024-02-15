@@ -8,7 +8,7 @@
             "name": "Record",
             "type": "python",
             "request": "launch",
-            "program": "src/record.py",
+            "module": "pupil_labs.web_aois.record",
             "console": "integratedTerminal",
             "args": ["data/aois.json"],
             "justMyCode": true
@@ -16,7 +16,7 @@
             "name": "Process",
             "type": "python",
             "request": "launch",
-            "program": "src/process.py",
+            "module": "pupil_labs.web_aois.process",
             "console": "integratedTerminal",
             "args": ["data/test2/recording", "data/test2/output"],
             "justMyCode": true
@@ -24,7 +24,7 @@
             "name": "Screenshots",
             "type": "python",
             "request": "launch",
-            "program": "src/screenshots.py",
+            "module": "pupil_labs.web_aois.screenshots",
             "console": "integratedTerminal",
             "args": ["data/aois.json", "data/test2/screenshots"],
             "justMyCode": true
@@ -32,7 +32,7 @@
             "name": "Visualize",
             "type": "python",
             "request": "launch",
-            "program": "src/visualize.py",
+            "module": "pupil_labs.web_aois.visualize",
             "console": "integratedTerminal",
             "args": ["data/test2/output", "data/test2/screenshots"],
             "justMyCode": true
