@@ -1,4 +1,4 @@
-import pupil_labs.web_aoi as this_project
+import pupil_labs.web_aois as this_project
 
 
 def test_package_metadata() -> None:

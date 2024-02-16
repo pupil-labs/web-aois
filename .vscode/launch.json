@@ -5,12 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Define",
+            "type": "python",
+            "request": "launch",
+            "module": "pupil_labs.web_aois.define",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },{
             "name": "Record",
             "type": "python",
             "request": "launch",
             "module": "pupil_labs.web_aois.record",
             "console": "integratedTerminal",
-            "args": ["data/aois.json"],
+            "args": ["data/web-aois.json"],
             "justMyCode": true
         },{
             "name": "Process",
@@ -26,7 +33,7 @@
             "request": "launch",
             "module": "pupil_labs.web_aois.screenshots",
             "console": "integratedTerminal",
-            "args": ["data/aois.json", "data/test2/screenshots"],
+            "args": ["data/web-aois.json", "data/test2/screenshots"],
             "justMyCode": true
         },{
             "name": "Visualize",

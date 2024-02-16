@@ -33,7 +33,7 @@ class BrowserRelay:
             record_video_dir=f"data/{self.recording_id}/"
         )
 
-        await self.context.add_init_script(path=files('pupil_labs.web_aois').joinpath('aoi-client.js'))
+        await self.context.add_init_script(path=files('pupil_labs.web_aois.client').joinpath('record.js'))
         await self.context.expose_binding('propagateScrollEvent', self.on_scroll)
         await self.context.expose_binding('propagateResizeEvent', self.on_resized)
         await self.context.expose_binding('propagateFocusEvent', self.on_tab_switched)

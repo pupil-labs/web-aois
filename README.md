@@ -10,6 +10,17 @@ playwright install
 
 ## Usage
 1. Create an [AOI Definitions](#aoi-defintions) file
+    ```bash
+    pl-web-aois-define
+    ```
+    1. This will open a web browser. Navigate to the page you intend to study
+    2. Move the mouse over an AOI element. A red box will appear indicating the extents of the element.
+    3. Right-click to create the AOI. You will be prompted for a name
+    4. Once all of the AOIs for this page are defined, click on the `Save` button under the list of AOIs.
+
+    NOTE: At this time on most sites (not on SPAs, for example), navigating to a new page will reset the list of AOIs, so you must define and save AOIs one page at a time. You can then manually combine the definitions.
+
+    NOTE: The definition tool uses xpaths to identify web elements, which is [not recommended by Playwright developers](https://playwright.dev/docs/locators#locate-by-css-or-xpath) because it relies on the underlying structure of the web page which may not be consistent. If that structure changes (which you may not be able to tell just by looking at the page), you will need to re-define the AOIs. For more reliable definitions, you can use locators by [manually specifying your AOI definitions](#aoi-defintions).
 
 2. Collect data
 
@@ -78,7 +89,7 @@ The AOI definitions file is a JSON-formatted structure that describes which elem
     * [`text`](https://playwright.dev/python/docs/api/class-page#page-get-by-text)
     * [`title`](https://playwright.dev/python/docs/api/class-page#page-get-by-title)
     * [`locator`](https://playwright.dev/python/docs/api/class-page#page-locator)
-* Subsequent selectors are applied to the previous selecto result to identify child elements therein. Except for the first selector definition in each AOI array, the following `type` values are allowed in addition to the ones above:
+* Subsequent selectors are applied to the previous selector result to identify child elements therein. Except for the first selector definition in each AOI array, the following `type` values are allowed in addition to the ones above:
     * [`filter`](https://playwright.dev/python/docs/api/class-locator#locator-filter)
     * [`nth`](https://playwright.dev/python/docs/api/class-locator#locator-nth)
     * [`first`](https://playwright.dev/python/docs/api/class-locator#locator-first)
