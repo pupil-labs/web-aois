@@ -27,10 +27,9 @@ class HeatmapVisualizer:
             self.save_aoi_heatmap(gaze_data_file, scale, detail)
 
     def save_aoi_heatmap(self, gaze_data_file, scale=0.25, detail=0.025):
-        aoi_name = gaze_data_file.stem.split('-')[-1]
         self._save_heatmap(
             gaze_data_file,
-            self.screenshot_path / f'aoi-{aoi_name}.png',
+            self.screenshot_path / gaze_data_file.with_suffix('.png').name,
             scale, detail
         )
 
