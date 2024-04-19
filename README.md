@@ -15,7 +15,8 @@ playwright install
     ```
     1. This will open a web browser. Navigate to the page you intend to study
     2. Move the mouse over an AOI element. A red box will appear indicating the extents of the element.
-    3. Right-click to create the AOI. You will be prompted for a name
+        * Note: to select the enclosing element of the currently highlighted element, press the `p` key.
+    3. Right-click to create the AOI. You will be prompted for a name.
     4. Once all of the AOIs for this page are defined, click on the `Save` button under the list of AOIs.
 
     NOTE: At this time on most sites (not on SPAs, for example), navigating to a new page will reset the list of AOIs, so you must define and save AOIs one page at a time. You can then manually combine the definitions.

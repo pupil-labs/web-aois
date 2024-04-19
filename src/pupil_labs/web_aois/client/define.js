@@ -188,22 +188,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(addAOIButton);
 
     document.addEventListener('mouseover', function (event) {
-      if(event.target.classList.contains("web_aoi_ignore_hovers")){
-        return;
-      }
-
-      currentTarget = event.target;
-
-
-      let targetRect = event.target.getBoundingClientRect();
-
-      addAOIButton.style.top = (window.scrollY + targetRect.top + 2 ) + 'px';
-      addAOIButton.style.left = (window.scrollX + targetRect.left + 2) + 'px';
-      addAOIButton.style.width = (targetRect.width - 4) + 'px';
-      addAOIButton.style.height = (targetRect.height - 4) + 'px';
-      addAOIButton.style.display = '';
-
-      event.target.hrefOld = event.target.href;
+      setCurrent(event.target);
     });
 
     document.addEventListener('mouseout', function (event) {
@@ -218,6 +203,43 @@ window.addEventListener('DOMContentLoaded', () => {
       event.preventDefault();
       return false;
     });
+
+    document.addEventListener('keyup', function (event) {
+      if(!currentTarget){
+        return;
+      }
+      if(event.key == "p" || event.key == "P"){
+        let currentRect = currentTarget.getBoundingClientRect();
+        let targetRect = currentRect;
+        while(sameRect(currentRect, targetRect)){
+          currentTarget = currentTarget.parentNode;
+          targetRect = currentTarget.getBoundingClientRect();
+        }
+        setCurrent(currentTarget);
+      }
+    });
+  }
+
+  function setCurrent(target){
+    if(target.classList.contains("web_aoi_ignore_hovers")){
+      return;
+    }
+
+    currentTarget = target;
+
+    let targetRect = target.getBoundingClientRect();
+
+    addAOIButton.style.top = (window.scrollY + targetRect.top + 2 ) + 'px';
+    addAOIButton.style.left = (window.scrollX + targetRect.left + 2) + 'px';
+    addAOIButton.style.width = (targetRect.width - 4) + 'px';
+    addAOIButton.style.height = (targetRect.height - 4) + 'px';
+    addAOIButton.style.display = '';
+
+    target.hrefOld = target.href;
+  }
+
+  function sameRect(a, b){
+    return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
   }
 
   init();
