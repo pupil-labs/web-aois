@@ -46,9 +46,9 @@ class BrowserTabState:
         self.gaze_writer = csv.DictWriter(
             (output_path/"gazes.csv").open('wt'),
             [
-                'timestamp',
-                'norm x',
-                'norm y',
+                'timestamp [ns]',
+                'x [norm]',
+                'y [norm]',
                 'window x [px]',
                 'window y [px]',
                 'page x [px]',
@@ -81,9 +81,9 @@ class BrowserTabState:
             self.aoi_writers[name] = csv.DictWriter(
                 (self.output_path/f"aoi-{name}.csv").open('wt'),
                 [
-                    'timestamp',
-                    'x norm',
-                    'y norm',
+                    'timestamp [ns]',
+                    'x [norm]',
+                    'y [norm]',
                     'x [px]',
                     'y [px]',
                 ]
@@ -105,9 +105,9 @@ class BrowserTabState:
         page_gaze = [window_gaze[i] + self.scroll_position[i] for i in range(2)]
 
         self.gaze_writer.writerow({
-            "timestamp": timestamp,
-            "norm x": surface_gaze.x,
-            "norm y": surface_gaze.y,
+            "timestamp [ns]": timestamp,
+            "x [norm]": surface_gaze.x,
+            "y [norm]": surface_gaze.y,
             "window x [px]": window_gaze[0],
             "window y [px]": window_gaze[1],
             "page x [px]": page_gaze[0],
@@ -121,11 +121,11 @@ class BrowserTabState:
             y_ok = 0 < aoi_gaze[1] < aoi_bounds['height']
             if x_ok and y_ok:
                 self.aoi_writers[aoi_name].writerow({
-                    'timestamp': timestamp,
+                    'timestamp [ns]': timestamp,
                     'x [px]': aoi_gaze[0],
                     'y [px]': aoi_gaze[1],
-                    'x norm': aoi_gaze[0] / aoi_bounds['width'],
-                    'y norm': aoi_gaze[1] / aoi_bounds['height'],
+                    'x [norm]': aoi_gaze[0] / aoi_bounds['width'],
+                    'y [norm]': aoi_gaze[1] / aoi_bounds['height'],
                 })
 
 class MatchedIterator:
