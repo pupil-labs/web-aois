@@ -5,6 +5,7 @@ import csv
 import numpy as np
 
 import decord
+from tqdm import tqdm
 
 from pupil_labs.real_time_screen_gaze.gaze_mapper import GazeMapper
 
@@ -211,11 +212,14 @@ class RecordingProcessor:
         self.event_generator = ExpirationGenerator(events_with_timestamps)
         self.gaze_generator = ExpirationGenerator(gazes_with_timestamps)
 
-        for frame_timestamp, frame in frames_with_timestamps:
-            self.iterate_until(frame_timestamp)
-            self.process_frame(frame_timestamp, frame)
+        with tqdm(total=len(video_timestamps)) as pbar:
+            for frame_timestamp, frame in frames_with_timestamps:
+                self.iterate_until(frame_timestamp)
+                self.process_frame(frame_timestamp, frame)
 
-        self.iterate_until(None)
+                pbar.update(1)
+
+            self.iterate_until(None)
 
     def iterate_until(self, timestamp):
         for gaze_timestamp, gaze in self.gaze_generator.until(timestamp):
