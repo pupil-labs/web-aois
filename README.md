@@ -32,7 +32,7 @@ playwright install
     pl-web-aois-record path-to-aoi-defs.json [https://example.com/]
     ```
 
-    b. Download and extract the recording to your PC. Recordings can be [transfered from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud.
+    b. Download and extract the recording to your PC. Recordings can be [transfered from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud (use "Native Recording Data").
 
 3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
     ```bash
