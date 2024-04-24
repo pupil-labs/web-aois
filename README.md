@@ -162,6 +162,34 @@ Here's an example that defines two simple AOIs for one webpage and one complex A
 }
 ```
 
+## Output Files
+### Data files
+A file named `gazes.csv` file will be generated which represents mapped gaze data to the webpage in full. It includes the following columns:
+
+| Column         | Description
+|----------------|--------------
+| timestamp [ns] | UTC timestamp in nanoseconds of the sample
+| x [norm]       | X-coordinate of the mapped gaze point to the browser window content in normalized space (`0-1`)
+| y [norm]       | Y-coordinate of the mapped gaze point to the browser window content in normalized space (`0-1`)
+| window x [px]  | X-coordinate of the mapped gaze point to the browser window content in pixels (ignores page scroll)
+| window y [px]  | Y-coordinate of the mapped gaze point to the browser window content in pixels (ignores page scroll)
+| page x [px]    | X-coordinate of the mapped gaze point to the web page in pixels
+| page y [px]    | Y-coordinate of the mapped gaze point to the web page in pixels
+
+For each AOI, a `aoi-[AOI_NAME].csv` file will be generated which represents mapped gaze data that lands on that particular AOI. It includes the following columns:
+
+| Column         | Description
+|----------------|--------------
+| timestamp [ns] | UTC timestamp in nanoseconds of the sample
+| x [norm]       | X-coordinate of the mapped gaze point to the AOI in normalized space (`0-1`)
+| y [norm]       | Y-coordinate of the mapped gaze point to the AOI in normalized space (`0-1`)
+| x [px]         | X-coordinate of the mapped gaze point to the AOI in pixels
+| y [px]         | Y-coordinate of the mapped gaze point to the AOI in pixels
+
+### Image files
+If heatmaps are generated per-recording, you will find two `.png` files for the whole page (`heatmap-gazes-overlaid.png` and `heatmap-gazes-transparent.png`) and two `.png` files for each AOI (`heatmap-aoi-[AOI_NAME]-overlaid.png` and `heatmap-aoi-[AOI_NAME]-transparent.png`). The transparent images include only the heatmap data, while the overlaid versions show the heatmap superimposed on captures of the webpage and AOIs.
+
+
 ## Known issues
 * Although Playwright supports several browsers, this has only been configured and tested with Chromium
 * At this time browsing must be limited to a single window and tab. Gaze mapping in other windows or tabs is currently unsupported and results are undefined.
