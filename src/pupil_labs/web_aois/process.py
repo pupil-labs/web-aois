@@ -99,8 +99,8 @@ class BrowserTabState:
             return
 
         window_gaze = [
-            surface_gaze.x * browser_size[0] + self.scroll_position[0],
-            browser_size[1] - surface_gaze.y * browser_size[1] + self.scroll_position[0],
+            surface_gaze.x * browser_size[0],
+            browser_size[1] - surface_gaze.y * browser_size[1],
         ]
         page_gaze = [window_gaze[i] + self.scroll_position[i] for i in range(2)]
 
