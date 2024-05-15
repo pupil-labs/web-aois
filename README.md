@@ -36,14 +36,14 @@ playwright install
 
 3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
     ```bash
-    pl-web-aois-process path-to-recording output-path
+    pl-web-aois-process path-to-recording process-output-path
     ```
 
 4. Visualize your data
 
     a. Collect screenshots
     ```bash
-    pl-web-aois-screenshots path-to-aoi-defs.json output-path
+    pl-web-aois-screenshots path-to-aoi-defs.json screenshots-output-path
     ```
 
     b. Create visualizations
