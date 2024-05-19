@@ -1,5 +1,5 @@
 # Web AOIs
-This project can be used with a [Pupil Labs Neon eyetracker](https://pupil-labs.com/products/neon) to record and visualize data as a user browses a webpage. Gaze data is mapped to coordinates for the webpage and for individual AOIs within a page.
+This project can be used with a [Pupil Labs Neon eye tracker](https://pupil-labs.com/products/neon) to record and visualize data as a user browses a webpage. Gaze data is mapped to coordinates for the webpage and for individual AOIs within a page.
 
 ## Installation
 Install the python package and initialize Playwright
@@ -13,9 +13,9 @@ playwright install
     ```bash
     pl-web-aois-define
     ```
-    1. This will open a web browser. Navigate to the page you intend to study
+    1. This will open a web browser. Navigate to the page you intend to study.
     2. Move the mouse over an AOI element. A red box will appear indicating the extents of the element.
-        * Note: to select the enclosing element of the currently highlighted element, press the `p` key.
+        * Note: To select the enclosing element of the currently highlighted element, press the `p` key.
     3. Right-click to create the AOI. You will be prompted for a name.
     4. Once all of the AOIs for this page are defined, click on the `Save` button under the list of AOIs.
 
@@ -32,7 +32,7 @@ playwright install
     pl-web-aois-record path-to-aoi-defs.json [https://example.com/]
     ```
 
-    b. Download and extract the recording to your PC. Recordings can be [transfered from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud (use "Native Recording Data").
+    b. Download and extract the recording to your PC. Recordings can be [transferred from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud (use "Native Recording Data").
 
 3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
     ```bash
@@ -52,7 +52,7 @@ playwright install
     ```
 
 
-## AOI Defintions
+## AOI Definitions
 The AOI definitions file is a JSON-formatted structure that describes which elements on which webpages should be considered AOI's. The file follows this format:
 ```json
 {
@@ -191,7 +191,7 @@ If heatmaps are generated per-recording, you will find two `.png` files for the 
 
 
 ## Known issues
-* Although Playwright supports several browsers, this has only been configured and tested with Chromium
+* Although Playwright supports several browsers, this has only been configured and tested with Chromium.
 * At this time browsing must be limited to a single window and tab. Gaze mapping in other windows or tabs is currently unsupported and results are undefined.
-* Firefox can't track new tabs created with `Ctrl+t`
-* Chromium doesn't trigger focus/visibility changes (switching between tabs) consistently
+* Firefox can't track new tabs created with `Ctrl+t`.
+* Chromium doesn't trigger focus/visibility changes (switching between tabs) consistently.
