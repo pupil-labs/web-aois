@@ -56,7 +56,7 @@ class BrowserRelay:
         # @todo - this scheme assumes all tabs are in the same window
         await self.send_event(
             f"browser_size={width},{height}",
-             event_timestamp_unix_ns=time.time_ns()
+            event_timestamp_unix_ns=time.time_ns()
         )
 
     async def on_new_page(self, page):
@@ -110,7 +110,7 @@ class BrowserRelay:
 
         if page.url in self.aoi_definitions_by_url:
             aoi_locators = get_aoi_locators_for_page(page, self.aoi_definitions_by_url[page.url])
-            for aoi_name,locator in aoi_locators.items():
+            for aoi_name, locator in aoi_locators.items():
                 bounds = await locator.bounding_box()
                 bounds = [bounds['x'], bounds['y'], bounds['width'], bounds['height']]
                 bounds_str = ','.join([str(v) for v in bounds])
@@ -134,7 +134,6 @@ class BrowserRelay:
 
             await self.send_event(f"marker[{tab_load_id},{marker_id}]={bounds_str}")
 
-
     async def send_event(self, event, event_timestamp_unix_ns=None):
         await self.device.send_event(event, event_timestamp_unix_ns=time.time_ns())
 
@@ -154,6 +153,7 @@ class BrowserRelay:
 
         await self.device.recording_stop_and_save()
         await self.context.close()
+
 
 async def async_main():
     async with Network() as network:
@@ -175,8 +175,10 @@ async def async_main():
 
             await relay.record_page(url=url)
 
+
 def main():
     asyncio.run(async_main())
+
 
 if __name__ == '__main__':
     main()

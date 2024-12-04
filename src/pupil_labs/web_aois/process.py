@@ -303,7 +303,6 @@ class RecordingProcessor:
             case 'browser_size':
                 self.browser_client_size = [int(v) for v in event_match.group('value').split(',')]
 
-
     def set_marker_bounds(self, tab_id, marker_id, x, y, width, height):
         tab_state = self.get_tab_state(tab_id)
         tab_state.set_marker_bounds(marker_id, x, y, width, height)
@@ -319,10 +318,12 @@ class RecordingProcessor:
 
         return tab
 
+
 def main():
     import sys
     processor = RecordingProcessor(sys.argv[1], sys.argv[2])
     processor.process()
+
 
 if __name__ == '__main__':
     main()

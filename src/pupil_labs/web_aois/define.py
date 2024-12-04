@@ -7,6 +7,7 @@ from importlib.resources import files
 
 from playwright.async_api import async_playwright
 
+
 async def save_definitions(source, data):
     output_file = filedialog.asksaveasfile(
         mode='w',
@@ -25,8 +26,10 @@ async def save_definitions(source, data):
     print("Saved", output_file.name)
     output_file.close()
 
+
 async def on_new_page(page):
     page.on("dialog", lambda _: None)
+
 
 async def async_main():
     async with async_playwright() as playwright:
@@ -47,6 +50,7 @@ async def async_main():
 
 def main():
     asyncio.run(async_main())
+
 
 if __name__ == '__main__':
     main()
