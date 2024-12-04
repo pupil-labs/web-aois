@@ -248,18 +248,16 @@ class RecordingProcessor:
             self.active_tab.markers_dirty = False
 
         self.last_frame = frame.asnumpy()
+        self.gaze_mapper.process_scene(self.last_frame)
 
     def process_gaze(self, timestamp, gaze):
         if self.last_frame is None:
             return
 
-        # @TODO: each call to process_frame has to find surface tags again
-        #        this is only necessary when the frame has changed
-        #        if the frame hasn't changed, gaze can be mapped to the previously
-        #        calculated surface position
-        result = self.gaze_mapper.process_frame(self.last_frame, gaze)
+        result = self.gaze_mapper.process_gaze(gaze)
         if result is None:
             return
+
         for surface_uid, surface_gazes in result.mapped_gaze.items():
             if surface_uid == self.active_tab.surface.uid:
                 for surface_gaze in surface_gazes:
