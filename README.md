@@ -4,7 +4,7 @@ This project can be used with a [Pupil Labs Neon eye tracker](https://pupil-labs
 ## Installation
 Install the python package and initialize Playwright
 ```
-pip install git+https://github.com/pupil-labs/pupil-web-aois.git
+pip install git+https://github.com/pupil-labs/web-aois.git
 playwright install
 ```
 

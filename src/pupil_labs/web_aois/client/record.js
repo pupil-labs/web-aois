@@ -20,7 +20,7 @@ function createMarkerElement(id, size, brightness){
 	return image;
 }
 
-function embedTags(markerSize, brightness, target=null){
+window.embedTags = function(markerSize, brightness, target=null){
 	if(!target){
 		target = document.body;
 	}
@@ -85,7 +85,7 @@ function shimLocationEventsForSPAs(){
 	});
 }
 
-function installEventListeners(){
+window.installEventListeners = function(){
 	shimLocationEventsForSPAs();
 
 	window.addEventListener("scroll", (e) => {
