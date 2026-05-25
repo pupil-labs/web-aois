@@ -15,6 +15,37 @@ from pupil_labs.camera import perspective_transform
 import pupil_apriltags
 
 
+# Default marker size (px in browser space) from BrowserRelay in record.py.
+# Markers are always at the four viewport corners (IDs 0–3), so we can
+# reconstruct the surface coordinate system even without browser marker events.
+DEFAULT_MARKER_SIZE_PX = 250
+
+# pupil_apriltags returns corners in order: BL, BR, TR, TL (in image/screen
+# space, y-down). Surface.localize pairs stored corners with detected corners
+# by index, so our surface marker dicts must use the same ordering.
+_MARKER_BROWSER_VERTS = {
+    # marker_id: [(BL), (BR), (TR), (TL)] in browser-pixel offsets from (0,0).
+    # Positions follow record.js embedTags layout:
+    #   0 → top=0, left=0   (top-left corner)
+    #   1 → top=0, right=0  (top-right corner)
+    #   2 → bottom=0, left=0 (bottom-left corner)
+    #   3 → bottom=0, right=0 (bottom-right corner)
+    # Each entry is a lambda(W, H, s) → array of shape (4, 2)
+}
+
+
+def _marker_verts_normalized(marker_id: int, W: float, H: float, s: float) -> np.ndarray:
+    """Return browser-normalized marker corners in BL, BR, TR, TL order."""
+    sw, sh = s / W, s / H
+    verts = {
+        0: [(0,    sh), (sw,   sh), (sw,   0),    (0,    0)],
+        1: [(1-sw, sh), (1,    sh), (1,    0),    (1-sw, 0)],
+        2: [(0,    1),  (sw,   1),  (sw,   1-sh), (0,    1-sh)],
+        3: [(1-sw, 1),  (1,    1),  (1,    1-sh), (1-sw, 1-sh)],
+    }
+    return np.array(verts[marker_id], dtype=np.float32)
+
+
 FIXATION_DTYPE = np.dtype(
     [
         ("event_type", "<i4"),
@@ -95,10 +126,6 @@ class BrowserTabState:
                 'window y [px]',
                 'page x [px]',
                 'page y [px]',
-                'amplitude [px]',
-                'amplitude [deg]',
-                'mean velocity',
-                'max velocity',
             ]
         )
         self.aoi_fixation_writers = {}
@@ -210,10 +237,6 @@ class BrowserTabState:
             'window y [px]': float(window_point[1]),
             'page x [px]': float(page_point[0]),
             'page y [px]': float(page_point[1]),
-            'amplitude [px]': float(fixation_record['amplitude_pixels']),
-            'amplitude [deg]': float(fixation_record['amplitude_angle_deg']),
-            'mean velocity': float(fixation_record['mean_velocity']),
-            'max velocity': float(fixation_record['max_velocity']),
         })
 
         for aoi_name, aoi_bounds in self.aoi_definitions.items():
@@ -362,6 +385,27 @@ class RecordingProcessor:
 
         return Surface(f"tab-{tab_state.id}", markers)
 
+    def _build_fallback_surface(self, tab_id):
+        """Build a surface from the known marker browser layout.
+
+        Used when no ``marker[...]`` browser events were recorded.  The four
+        AprilTag markers are always embedded at the corners of the viewport by
+        *record.js*, so we can reconstruct their browser-normalised positions
+        from the default marker size and the ``browser_size`` event value.
+
+        Corner ordering matches what ``pupil_apriltags.Detector`` returns:
+        BL → BR → TR → TL.  ``Surface.localize`` pairs stored corners with
+        detected corners by index, so the ordering must be consistent.
+        """
+        W, H = self.browser_client_size
+        if W <= 1 or H <= 1:
+            return None
+        s = DEFAULT_MARKER_SIZE_PX
+        markers = OrderedDict()
+        for marker_id in range(4):
+            markers[marker_id] = _marker_verts_normalized(marker_id, W, H, s)
+        return Surface(f"tab-{tab_id}", markers)
+
     def process(self):
         video_file = self.recording_path / "Neon Scene Camera v1 ps1.mp4"
         video_timestamps = np.fromfile(video_file.with_suffix(".time"), dtype="<u8")
@@ -404,9 +448,8 @@ class RecordingProcessor:
         fixation_timestamps = np.empty(0, dtype="<u8")
         if fixation_file.exists() and fixation_timestamps_file.exists():
             fixation_data = np.fromfile(fixation_file, dtype=FIXATION_DTYPE)
-            fixation_timestamps = np.fromfile(fixation_timestamps_file, dtype="<u8")
-            fixation_count = min(len(fixation_data), len(fixation_timestamps))
-            fixation_data = fixation_data[:fixation_count]
+            # Keep only fixation events to match pl-neon-recording semantics.
+            fixation_data = fixation_data[fixation_data['event_type'] == 1]
             # The native fixation time stream aligns with fixation starts. For mapping,
             # midpoint timing is usually more representative of the stable fixation.
             fixation_timestamps = (
@@ -467,25 +510,33 @@ class RecordingProcessor:
 
         markers = self.marker_detector.detect(gray)
         if not markers:
-            self.active_tab.img2surface = None
+            # Keep the last valid img2surface so gaze between marker detections
+            # can still be mapped (the screen/camera relationship changes slowly).
             return
 
         if self.debug_mapping:
             self.debug_stats["frames_with_markers"] += 1
 
         # Fallback for recordings that don't emit marker[...] browser events.
+        # Use the known viewport-corner layout rather than from_apriltag_detections,
+        # which would create a surface spanning only the tiny marker area.
         if self.active_tab.surface is None:
-            self.active_tab.surface = Surface.from_apriltag_detections(
-                f"tab-{self.active_tab.id}", markers, self.camera
-            )
+            fallback = self._build_fallback_surface(self.active_tab.id)
+            if fallback is not None:
+                self.active_tab.surface = fallback
+            else:
+                # browser_size not yet known – use detection-based fallback as
+                # last resort (will have poor yield but won't crash).
+                self.active_tab.surface = Surface.from_apriltag_detections(
+                    f"tab-{self.active_tab.id}", markers, self.camera
+                )
 
         localization = self.active_tab.surface.localize(markers, self.camera)
         if localization is not None:
             self.active_tab.img2surface, _ = localization
             if self.debug_mapping:
                 self.debug_stats["frames_localized"] += 1
-        else:
-            self.active_tab.img2surface = None
+        # If localization fails, retain the previous img2surface.
 
     def process_gaze(self, timestamp, gaze):
         if self.debug_mapping:
@@ -602,7 +653,13 @@ class RecordingProcessor:
                 self.active_tab.set_scroll_position(*scroll_value)
 
             case 'browser_size':
-                self.browser_client_size = [int(v) for v in event_match.group('value').split(',')]
+                new_size = [int(v) for v in event_match.group('value').split(',')]
+                if new_size != list(self.browser_client_size):
+                    self.browser_client_size = new_size
+                    # Invalidate any fallback surface built from the old size.
+                    for tab in self.tab_states:
+                        if tab.surface is not None and not tab.marker_verts:
+                            tab.surface = None
 
     def set_marker_bounds(self, tab_id, marker_id, x, y, width, height):
         tab_state = self.get_tab_state(tab_id)
