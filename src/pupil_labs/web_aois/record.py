@@ -9,6 +9,23 @@ from pupil_labs.realtime_api import Device, Network
 
 from .aoi_locator_helper import get_aoi_locators_for_page
 
+
+async def discover_device(timeout_seconds=5):
+    async with Network() as network:
+        dev_info = await network.wait_for_new_device(timeout_seconds=timeout_seconds)
+        if dev_info is not None:
+            return dev_info
+
+        # Fallback: a device may already be present in the discovery cache,
+        # but not "new" during this wait window.
+        if network.devices:
+            return network.devices[0]
+
+    raise RuntimeError(
+        "No Neon device discovered. Ensure Neon Companion is running, "
+        "your device is on the same network, and try again."
+    )
+
 class BrowserRelay:
     def __init__(self, pw, device, aoi_definitions_by_url):
         self.pw = pw
@@ -156,9 +173,7 @@ class BrowserRelay:
 
 
 async def async_main():
-    async with Network() as network:
-        dev_info = await network.wait_for_new_device(timeout_seconds=5)
-
+    dev_info = await discover_device(timeout_seconds=5)
     async with Device.from_discovered_device(dev_info) as device:
         print('Starting recording!')
 
