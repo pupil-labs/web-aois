@@ -33,7 +33,7 @@ async def async_main():
 
             await page.goto(url, wait_until="domcontentloaded")
             try:
-                await page.wait_for_load_state("networkidle", timeout=5000)
+                await page.wait_for_load_state("networkidle", timeout=10000)
             except PlaywrightTimeoutError:
                 pass
 
@@ -44,7 +44,7 @@ async def async_main():
                 try:
                     await locator.first.screenshot(
                         path=page_dir / f"aoi-{_slugify(aoi_name)}.png",
-                        timeout=5000,
+                        timeout=10000,
                     )
                 except PlaywrightTimeoutError as error:
                     failed_aois.append((url, aoi_name, str(error).splitlines()[0]))
