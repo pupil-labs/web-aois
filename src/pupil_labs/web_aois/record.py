@@ -10,14 +10,11 @@ from pupil_labs.realtime_api import Device, Network
 from .aoi_locator_helper import get_aoi_locators_for_page
 
 
-async def discover_device(timeout_seconds=5):
+async def discover_device(timeout_seconds=10):
     async with Network() as network:
         dev_info = await network.wait_for_new_device(timeout_seconds=timeout_seconds)
         if dev_info is not None:
             return dev_info
-
-        # Fallback: a device may already be present in the discovery cache,
-        # but not "new" during this wait window.
         if network.devices:
             return network.devices[0]
 
