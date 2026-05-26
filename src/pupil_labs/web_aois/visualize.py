@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import re
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +9,11 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 
 from .image_tools import add_overlay
+
+
+def _slugify(value):
+    value = re.sub(r"[^a-zA-Z0-9._-]+", "-", value.strip())
+    return value.strip("-") or "page"
 
 
 class HeatmapVisualizer:
@@ -55,8 +62,11 @@ class HeatmapVisualizer:
         stem = data_file_path.stem
         if stem.startswith('aoi-fixations-'):
             aoi_name = stem[len('aoi-fixations-'):]
-            return f"aoi-{aoi_name}.png"
-        return f"{stem}.png"
+        elif stem.startswith('aoi-'):
+            aoi_name = stem[len('aoi-'):]
+        else:
+            aoi_name = stem
+        return f"aoi-{_slugify(aoi_name)}.png"
 
     def save_aoi_heatmap(self, gaze_data_file, scale=0.25, detail=0.025):
         self._save_heatmap(
@@ -96,8 +106,31 @@ class HeatmapVisualizer:
             print(f"Skipping {gaze_data_path}: missing columns {xy_keys}")
             return
 
-        gaze_on_surf_x = data[xy_keys[0]] / (hist_dims[1] / scale)
-        gaze_on_surf_y = data[xy_keys[1]] / (hist_dims[0] / scale)
+        gaze_x = data[xy_keys[0]].astype(float)
+        gaze_y = data[xy_keys[1]].astype(float)
+
+        # Full-page gaze coordinates are in CSS pixels, while Playwright
+        # screenshots can be device pixels (e.g., 2x on Retina). Infer a
+        # CSS->image scaling factor from X and apply it to both axes.
+        css_to_image_scale = 1.0
+        if (
+            xy_keys[0] == 'page_x_px'
+            and 'window_x_px' in data.dtype.names
+            and 'x_norm' in data.dtype.names
+        ):
+            x_norm = data['x_norm'].astype(float)
+            valid = np.isfinite(x_norm) & (x_norm > 0.02) & np.isfinite(data['window_x_px'])
+            if np.any(valid):
+                estimated_viewport_width = np.median(data['window_x_px'][valid] / x_norm[valid])
+                if np.isfinite(estimated_viewport_width) and estimated_viewport_width > 0:
+                    css_to_image_scale = screenshot.shape[1] / estimated_viewport_width
+
+        if xy_keys[0] == 'page_x_px':
+            gaze_x *= css_to_image_scale
+            gaze_y *= css_to_image_scale
+
+        gaze_on_surf_x = gaze_x / (hist_dims[1] / scale)
+        gaze_on_surf_y = gaze_y / (hist_dims[0] / scale)
 
         # make the histogram
         hist, _, _ = np.histogram2d(
