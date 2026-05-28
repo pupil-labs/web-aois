@@ -31,7 +31,28 @@ def _optional_context_auth_kwargs():
     return {}
 
 
-async def discover_device(timeout_seconds=10):
+def _optional_device_connection_kwargs():
+    device_ip = os.getenv('WEB_AOIS_DEVICE_IP')
+    device_port = os.getenv('WEB_AOIS_DEVICE_PORT', '8080')
+
+    if not device_ip:
+        return {}
+
+    try:
+        port = int(device_port)
+    except ValueError as exc:
+        raise ValueError('WEB_AOIS_DEVICE_PORT must be an integer.') from exc
+
+    if port <= 0 or port > 65535:
+        raise ValueError('WEB_AOIS_DEVICE_PORT must be in range 1-65535.')
+
+    return {
+        'address': device_ip,
+        'port': port,
+    }
+
+
+async def discover_device(timeout_seconds=30):
     async with Network() as network:
         dev_info = await network.wait_for_new_device(timeout_seconds=timeout_seconds)
         if dev_info is not None:
@@ -57,7 +78,8 @@ class BrowserRelay:
         self.tab_info = {}
 
         self.marker_size = 250
-        self.marker_brightness = 0.5
+        self.marker_brightness = 1
+        self.marker_contrast = 3
 
         self.recording_id = ''
 
@@ -108,7 +130,9 @@ class BrowserRelay:
             return
 
         await asyncio.sleep(1.0)
-        await page.evaluate(f'embedTags({self.marker_size}, {self.marker_brightness})')
+        await page.evaluate(
+            f'embedTags({self.marker_size}, {self.marker_brightness}, null, {self.marker_contrast})'
+        )
         await page.evaluate('installEventListeners()')
 
     async def on_tab_switched(self, source, scroll_x, scroll_y):
@@ -193,8 +217,17 @@ class BrowserRelay:
 
 
 async def async_main():
-    dev_info = await discover_device(timeout_seconds=10)
-    async with Device.from_discovered_device(dev_info) as device:
+    device_connection = _optional_device_connection_kwargs()
+    if device_connection:
+        print(
+            f"Connecting directly to Neon at {device_connection['address']}:{device_connection['port']}"
+        )
+        device_context = Device(device_connection['address'], device_connection['port'])
+    else:
+        dev_info = await discover_device(timeout_seconds=30)
+        device_context = Device.from_discovered_device(dev_info)
+
+    async with device_context as device:
         print('Starting recording!')
 
         async with async_playwright() as playwright:
