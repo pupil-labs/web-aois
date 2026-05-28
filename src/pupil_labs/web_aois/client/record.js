@@ -4,7 +4,7 @@ function zeroPad(num, size) {
 	return num;
 }
 
-function createMarkerElement(id, size, brightness){
+function createMarkerElement(id, size, brightness, contrast=1){
 	let baseUrl = "https://raw.githubusercontent.com/AprilRobotics/apriltag-imgs/master/tag36h11/";
 
 	let image = document.createElement("img");
@@ -14,22 +14,23 @@ function createMarkerElement(id, size, brightness){
 	image.style.height = size + "px";
 	image.style.zIndex = 999;
 	image.style.imageRendering = "pixelated";
-	image.style.filter = "brightness(" + (brightness*100) + "%)";
+	image.style.filter =
+		"brightness(" + (brightness * 100) + "%) contrast(" + contrast + ")";
 	image.style.position = "fixed";
 
 	return image;
 }
 
-window.embedTags = function(markerSize, brightness, target=null){
+window.embedTags = function(markerSize, brightness, target=null, contrast=1){
 	if(!target){
 		target = document.body;
 	}
 
 	let markers = [
-		createMarkerElement(0, markerSize, brightness),
-		createMarkerElement(1, markerSize, brightness),
-		createMarkerElement(2, markerSize, brightness),
-		createMarkerElement(3, markerSize, brightness),
+		createMarkerElement(0, markerSize, brightness, contrast),
+		createMarkerElement(1, markerSize, brightness, contrast),
+		createMarkerElement(2, markerSize, brightness, contrast),
+		createMarkerElement(3, markerSize, brightness, contrast),
 	];
 
 	markers[0].style.top = "0px";
