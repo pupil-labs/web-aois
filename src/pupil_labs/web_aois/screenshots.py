@@ -1,12 +1,33 @@
 import sys
 import json
 import asyncio
+import os
 import re
 from pathlib import Path
 
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 
 from .aoi_locator_helper import get_aoi_locators_for_page
+
+
+def _optional_context_auth_kwargs():
+    username = os.getenv('WEB_AOIS_AUTH_USERNAME')
+    password = os.getenv('WEB_AOIS_AUTH_PASSWORD')
+
+    if bool(username) != bool(password):
+        raise ValueError(
+            'Set both WEB_AOIS_AUTH_USERNAME and WEB_AOIS_AUTH_PASSWORD, or neither.'
+        )
+
+    if username and password:
+        return {
+            'http_credentials': {
+                'username': username,
+                'password': password,
+            }
+        }
+
+    return {}
 
 
 def _slugify(value):
@@ -23,7 +44,9 @@ async def async_main():
         output_path.mkdir(parents=True, exist_ok=True)
 
         browser = await playwright.chromium.launch(headless=False, args=['--start-maximized'])
-        context = await browser.new_context(no_viewport=True)
+        context_kwargs = {'no_viewport': True}
+        context_kwargs.update(_optional_context_auth_kwargs())
+        context = await browser.new_context(**context_kwargs)
 
         page = await context.new_page()
         failed_aois = []
