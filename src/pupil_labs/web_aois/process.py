@@ -628,7 +628,8 @@ class RecordingProcessor:
 
         args = event_match.group('args')
         if args is not None:
-            args = args.split(',')
+            # AOI names may contain commas, so only split the first two fields.
+            args = args.split(',', 2)
 
         match event_match.group('event'):
             case 'browser_url':
