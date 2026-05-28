@@ -2,12 +2,33 @@ import sys
 import json
 import asyncio
 import time
+import os
 from importlib.resources import files
 
 from playwright.async_api import async_playwright
 from pupil_labs.realtime_api import Device, Network
 
 from .aoi_locator_helper import get_aoi_locators_for_page
+
+
+def _optional_context_auth_kwargs():
+    username = os.getenv('WEB_AOIS_AUTH_USERNAME')
+    password = os.getenv('WEB_AOIS_AUTH_PASSWORD')
+
+    if bool(username) != bool(password):
+        raise ValueError(
+            'Set both WEB_AOIS_AUTH_USERNAME and WEB_AOIS_AUTH_PASSWORD, or neither.'
+        )
+
+    if username and password:
+        return {
+            'http_credentials': {
+                'username': username,
+                'password': password,
+            }
+        }
+
+    return {}
 
 
 async def discover_device(timeout_seconds=10):
@@ -42,10 +63,12 @@ class BrowserRelay:
 
     async def playwright_init(self):
         self.browser = await self.pw.chromium.launch(headless=False, args=['--start-maximized'])
-        self.context = await self.browser.new_context(
-            no_viewport=True,
-            record_video_dir=f"data/{self.recording_id}/"
-        )
+        context_kwargs = {
+            'no_viewport': True,
+            'record_video_dir': f"data/{self.recording_id}/",
+        }
+        context_kwargs.update(_optional_context_auth_kwargs())
+        self.context = await self.browser.new_context(**context_kwargs)
 
         await self.context.add_init_script(path=files('pupil_labs.web_aois.client').joinpath('record.js'))
         await self.context.expose_binding('propagateScrollEvent', self.on_scroll)
@@ -170,7 +193,7 @@ class BrowserRelay:
 
 
 async def async_main():
-    dev_info = await discover_device(timeout_seconds=5)
+    dev_info = await discover_device(timeout_seconds=10)
     async with Device.from_discovered_device(dev_info) as device:
         print('Starting recording!')
 
