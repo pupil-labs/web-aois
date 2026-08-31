@@ -2,55 +2,83 @@
 This project can be used with a [Pupil Labs Neon eye tracker](https://pupil-labs.com/products/neon) to record and visualize data as a user browses a webpage. Gaze data is mapped to coordinates for the webpage and for individual AOIs within a page.
 
 ## Installation
-Install the python package and initialize Playwright
+The `pl-web-aois-app` desktop app ships only from this repository, so clone it rather than installing from a release. Python 3.9 or newer is required.
+
+```bash
+git clone https://github.com/pupil-labs/web-aois.git
+cd web-aois
+
+uv venv
+source .venv/bin/activate
+
+SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 uv pip install -e .
+playwright install chromium
 ```
-pip install git+https://github.com/pupil-labs/web-aois.git
-playwright install
+
+On Windows, activate with `.venv\Scripts\activate`, then set the version variable separately (`set SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0`) before running `uv pip install -e .`. Install `uv` first by following the [uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
+
+You can also run the app without manually activating the environment:
+
+```bash
+SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 uv run --with . pl-web-aois-app
 ```
+
+The `uv run` form still needs Chromium installed once:
+
+```bash
+SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 uv run --with . playwright install chromium
+```
+
+`SETUPTOOLS_SCM_PRETEND_VERSION` is required because the working tree has no release tags. Without it, `setuptools-scm` cannot infer a version and the install fails with `LookupError: setuptools-scm was unable to detect version`.
+
+This installs the recording dependencies (Playwright, PyQt6, the Neon Real-Time API) and registers the `pl-web-aois-app` command. Confirm the install with:
+
+```bash
+pl-web-aois-app
+```
+
+The Neon Player analysis plugin in `plugins/web_aois_plugin/` is not installed by the command above; see [Analyze in Neon Player](#3-analyze-in-neon-player).
 
 ## Usage
-1. Create an [AOI Definitions](#aoi-defintions) file
-    ```bash
-    pl-web-aois-define
-    ```
-    1. This will open a web browser. Navigate to the page you intend to study.
-    2. Move the mouse over an AOI element. A red box will appear indicating the extents of the element.
-        * Note: To select the enclosing element of the currently highlighted element, press the `p` key.
+Everything needed to define AOIs and record a session is handled by the desktop app:
+```bash
+pl-web-aois-app
+```
+
+### 1. Define or load AOIs
+* `Define AOIs` opens Chromium so you can build an [AOI Definitions](#aoi-defintions) file:
+    1. Navigate to the page you intend to study.
+    2. Move the mouse over an AOI element. A red box indicates the extents of the element.
+        * To select the enclosing element of the currently highlighted element, press the `p` key.
     3. Right-click to create the AOI. You will be prompted for a name.
-    4. Once all of the AOIs for this page are defined, click on the `Save` button under the list of AOIs.
+    4. When all AOIs for the page are defined, click `Save` under the list of AOIs and choose where to write `web-aois.json`.
+* `Load AOI JSON` reuses an existing definitions file, so you do not need to redefine AOIs each run.
 
-    NOTE: At this time on most sites (not on SPAs, for example), navigating to a new page will reset the list of AOIs, so you must define and save AOIs one page at a time. You can then manually combine the definitions.
+NOTE: On most sites (not on SPAs, for example), navigating to a new page resets the list of AOIs, so define and save AOIs one page at a time. You can then manually combine the definitions.
 
-    NOTE: The definition tool uses xpaths to identify web elements, which is [not recommended by Playwright developers](https://playwright.dev/docs/locators#locate-by-css-or-xpath) because it relies on the underlying structure of the web page which may not be consistent. If that structure changes (which you may not be able to tell just by looking at the page), you will need to re-define the AOIs. For more reliable definitions, you can use locators by [manually specifying your AOI definitions](#aoi-defintions).
+NOTE: The definition tool uses xpaths to identify web elements, which is [not recommended by Playwright developers](https://playwright.dev/docs/locators#locate-by-css-or-xpath) because it relies on the underlying structure of the web page which may not be consistent. If that structure changes (which you may not be able to tell just by looking at the page), you will need to re-define the AOIs. For more reliable definitions, you can use locators by [manually specifying your AOI definitions](#aoi-defintions).
 
-2. Collect data
+### 2. Record a session
+* `Connect Neon and record` starts a recording on the Neon Companion app and opens the browsing session. The recording stops when the browser window is closed.
+* `Start URL` is optional. If left empty, the first URL in the AOI definitions file is used.
+* `Neon IP` and `Neon Port` are optional and bypass automatic device discovery when it fails.
+* Browser/AOI events are written to `web-events.csv` next to the selected `web-aois.json` instead of being sent as Neon events.
 
-    a. Record a browsing session. This will connect to the companion app and start a recording. The recording will be stopped when the browser window is closed.
+Then transfer the recording to your PC. Recordings can be [transferred from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud (use "Native Recording Data").
 
-    You can optionally specify a URL to start with. If you do not, the first URL in the AOI definitions file will be used.
-    ```bash
-    pl-web-aois-record path-to-aoi-defs.json [https://example.com/]
-    ```
+### 3. Analyze in Neon Player
+Analysis is not performed by this app. Copy `plugins/web_aois_plugin/` into your Neon Player plugins directory, then point the plugin at your `web-aois.json` and (optionally) `web-events.csv`.
 
-    b. Download and extract the recording to your PC. Recordings can be [transferred from the device over USB](https://docs.pupil-labs.com/neon/data-collection/transfer-recordings-via-usb/#transfer-recordings-via-usb) or downloaded from Pupil Cloud (use "Native Recording Data").
+### Optional: CLI equivalents
+The individual steps are also available as standalone commands:
+```bash
+pl-web-aois-define
+pl-web-aois-record path-to-aoi-defs.json [https://example.com/]
+```
 
-3. Process your recording to generate new CSV files that have gaze mapped to web page coordinates and individual AOI coordinates
-    ```bash
-    pl-web-aois-process path-to-recording process-output-path
-    ```
-
-4. Visualize your data
-
-    a. Collect screenshots
-    ```bash
-    pl-web-aois-screenshots path-to-aoi-defs.json screenshots-output-path
-    ```
-
-    b. Create visualizations
-    ```bash
-    pl-web-aois-visualize process-output-path screenshots-output-path
-    ```
-
+Event sink configuration for `pl-web-aois-record`:
+* `WEB_AOIS_EVENT_SINK=neon|file|both` (default: `both`; the app forces `file`)
+* `WEB_AOIS_EVENT_LOG_PATH=/absolute/path/web-events.csv` (used when sink includes `file`)
 
 ## AOI Definitions
 The AOI definitions file is a JSON-formatted structure that describes which elements on which webpages should be considered AOI's. The file follows this format:
@@ -163,6 +191,38 @@ Here's an example that defines two simple AOIs for one webpage and one complex A
 ```
 
 ## Output Files
+### Browser event sidecar
+If recording with a file event sink, browser events are saved as CSV with two columns:
+
+| Column         | Description |
+|----------------|-------------|
+| timestamp [ns] | UTC timestamp in nanoseconds |
+| event          | Raw browser/AOI event string (`browser_url`, `browser_scroll`, `aoi[...]`, `marker[...]`, etc.) |
+
+The remaining files below are produced by the Neon Player plugin, not by the recording app.
+
+### Neon Player analysis outputs
+If using the plugin in `plugins/web_aois_plugin/`, analysis outputs are cached under:
+
+`<recording>/.neon_player/web_aois/`
+
+Typical structure:
+
+```text
+<recording>/.neon_player/web_aois/
+    screenshots/
+        <url-slug>/
+            full-page.png
+            aoi-*.png
+    output/
+        tab-0/
+            gazes.csv
+            fixations.csv
+            aoi-*.csv
+            aoi-fixations-*.csv
+        tab_manifest.json
+```
+
 ### Data files
 A file named `gazes.csv` file will be generated which represents mapped gaze data to the webpage in full. It includes the following columns:
 

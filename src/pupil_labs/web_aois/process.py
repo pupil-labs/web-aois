@@ -176,9 +176,11 @@ class TimedDataCollection:
 
 
 class RecordingProcessor:
-    def __init__(self, recording_path, output_path):
+    def __init__(self, recording_path, output_path, event_log_path=None, progress_callback=None):
         self.recording_path = Path(recording_path)
         self.output_path = Path(output_path)
+        self.event_log_path = Path(event_log_path) if event_log_path else None
+        self.progress_callback = progress_callback
 
         self.event_regex = re.compile(r'(?P<event>[^\[=]*)(\[(?P<args>[^\]]*)\])?(=(?P<value>.*))?')
 
@@ -190,6 +192,25 @@ class RecordingProcessor:
         self.active_tab = None
         self.last_frame = None
 
+    def _load_events(self):
+        event_file = self.event_log_path or self.recording_path / "event.txt"
+        if self.event_log_path is None:
+            return (
+                event_file.read_text().split("\n"),
+                np.fromfile(event_file.with_suffix(".time"), dtype="<u8"),
+            )
+
+        event_timestamps = []
+        event_data = []
+        with event_file.open("rt", newline="") as handle:
+            for row in csv.DictReader(handle):
+                try:
+                    event_timestamps.append(int(float(row["timestamp [ns]"])))
+                    event_data.append(row["event"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+        return event_data, np.asarray(event_timestamps, dtype="<u8")
+
     def process(self):
         video_file = self.recording_path / "Neon Scene Camera v1 ps1.mp4"
         video_reader = decord.VideoReader(str(video_file), ctx=decord.cpu(0))
@@ -197,9 +218,7 @@ class RecordingProcessor:
 
         frames_with_timestamps = TimedDataCollection(video_timestamps, video_reader)
 
-        event_file = self.recording_path / "event.txt"
-        event_data = event_file.read_text().split("\n")
-        event_timestamps = np.fromfile(event_file.with_suffix(".time"), dtype="<u8")
+        event_data, event_timestamps = self._load_events()
 
         events_with_timestamps = TimedDataCollection(event_timestamps, event_data)
 
@@ -218,6 +237,8 @@ class RecordingProcessor:
                 self.process_frame(frame_timestamp, frame)
 
                 pbar.update(1)
+                if self.progress_callback is not None:
+                    self.progress_callback(pbar.n / len(video_timestamps))
 
             self.iterate_until(None)
 
