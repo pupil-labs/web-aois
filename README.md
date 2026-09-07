@@ -2,7 +2,9 @@
 This project can be used with a [Pupil Labs Neon eye tracker](https://pupil-labs.com/products/neon) to record and visualize data as a user browses a webpage. Gaze data is mapped to coordinates for the webpage and for individual AOIs within a page.
 
 ## Installation
-The `pl-web-aois-app` desktop app ships only from this repository, so clone it rather than installing from a release. Python 3.9 or newer is required.
+The `pl-web-aois-app` is a desktop app. 
+
+Clone the repository first. Python 3.9 or newer is required.
 
 ```bash
 git clone https://github.com/pupil-labs/web-aois.git
